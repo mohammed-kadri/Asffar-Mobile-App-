@@ -15,15 +15,12 @@ This application provides a platform for travelers to discover and book travel p
 - Booking management
 - Multi-language support (English, Arabic, French)
 - Internet connection detection
-- Subscription status checking
 
 ### For Agencies
 - Create and manage travel posts and service listings
 - View trip statistics and analytics
 - Real-time messaging with travelers
 - Agency profile management
-- Document submission for verification
-- Subscription management
 - Post editing and deletion capabilities
 
 ### General Features
@@ -31,7 +28,6 @@ This application provides a platform for travelers to discover and book travel p
 - Cloud Firestore database integration
 - Firebase Storage for image uploads
 - Responsive UI design
-- Theme support (Light theme)
 - Localization (L10n) for multiple languages
 - State management with Provider
 - Image cropping and picking
@@ -254,55 +250,3 @@ flutter build ios --release
   "messages": "subcollection"
 }
 ```
-
-## Common Issues & Solutions
-
-### Type 'List<dynamic>' is not a subtype of type 'String'
-**Issue**: Field stored as array in Firestore but expected as String
-**Solution**: Convert list to string before displaying
-```dart
-data['field'] is List ? (data['field'] as List).join(', ') : data['field'].toString()
-```
-
-### Internet Connection Issues
-- App checks internet connection before critical operations
-- Shows appropriate error messages when offline
-
-### Firebase Authentication Errors
-- Ensure Firebase project is properly configured
-- Check authentication rules in Firebase Console
-
-## API Endpoints
-
-### Google Cloud Functions
-- `checkpaymentverification-fnzltfhora-uc.a.run.app` - Payment verification endpoint
-
-## Contributing
-
-1. Create a new branch for your feature
-2. Commit your changes
-3. Push to the branch
-4. Create a Pull Request
-
-## Future Enhancements
-
-- Payment gateway integration
-- Advanced search and filtering
-- User reviews and ratings
-- Push notifications
-- Video support for posts
-- Analytics dashboard enhancements
-
-## Support
-
-For issues and questions, please contact the development team or open an issue in the repository.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Flutter community for excellent documentation
-- Firebase for backend services
-- All contributors and package developers
