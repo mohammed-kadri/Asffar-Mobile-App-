@@ -2,12 +2,12 @@ class Trip {
   final String id;
   final String agencyId;
   final String destination;
-  final String period;
+  final int period;
   final int price;
   final DateTime departDate;
   final DateTime returnDate;
   final bool family;
-  final String availablePlaces;
+  final int availablePlaces;
   final String hotelName;
   final List<String> places;
   final String description;

@@ -3,11 +3,13 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled3/providers/auth_provider.dart';
 import 'package:untitled3/providers/content_provider.dart';
+import 'package:untitled3/providers/messaging_provider.dart';
 import 'package:untitled3/services/auth_service.dart';
 import 'package:untitled3/services/content_service.dart';
 import 'package:untitled3/views/screens/agency/add_post.dart';
 import 'package:untitled3/views/screens/agency/agency_edit_profile.dart';
 import 'package:untitled3/views/screens/agency/agency_navbar.dart';
+import 'package:untitled3/views/screens/agency/contact_support.dart';
 import 'package:untitled3/views/screens/agency/home.dart';
 import 'package:untitled3/views/screens/agency/submit_documents.dart';
 import 'package:untitled3/views/screens/agency/submit_payment_confirmation.dart';
@@ -52,6 +54,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => localeProvider),
         Provider(create: (_) => AuthService()),
+        Provider(create: (_) => MessagingProvider()),
+        ChangeNotifierProvider(create: (_) => MessagingProvider()),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, child) {
@@ -71,7 +75,9 @@ class MyApp extends StatelessWidget {
             ],
             locale: localeProvider.locale,
             localeResolutionCallback: (locale, supportedLocales) {
-              return supportedLocales.contains(locale) ? locale : Locale('en', '');
+              return supportedLocales.contains(locale)
+                  ? locale
+                  : Locale('en', '');
             },
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
@@ -93,9 +99,10 @@ class MyApp extends StatelessWidget {
               '/agency_edit_profile': (context) => AgencyEditProfile(),
               '/change_language': (context) => ChangeLanguage(),
               '/subscription_guide': (context) => SubscriptionGuide(),
-              '/submit_payment_confirmation': (context) => SubmitPaymentConfirmation(),
+              '/submit_payment_confirmation': (context) =>
+                  SubmitPaymentConfirmation(),
               '/agency_navbar': (context) => AgencyNavbar(),
-
+              '/contact_support': (context) => ContactSupport(),
             },
           );
         },

@@ -45,38 +45,34 @@ class AuthService {
       }
 
       if (userType == null) {
+        await _auth.signOut();
         throw Exception('User type not found');
       }
 
       // Check if the user type matches the expected user type
       if (userType != expectedUserType) {
+        await _auth.signOut();
         throw Exception('User type does not match');
-      }
-
-      // Navigate to the appropriate home page
-      if (userType == 'Traveler') {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomeTraveler()));
-      } else if (userType == 'Agency') {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => AgencyNavbar()));
       }
 
       return user;
     } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          'الإيميل أو كلمة المرور التي أدخلتها غير صحيحة. الرجاء المحاولة مرة أخرى..',
-          textDirection: TextDirection.rtl,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontFamily: AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+      print('Login error: $e');
+      // Only show error if context is still mounted
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            'الإيميل أو كلمة المرور التي أدخلتها غير صحيحة. الرجاء المحاولة مرة أخرى..',
+            textDirection: TextDirection.rtl,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontFamily: AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+            ),
           ),
-        ),
-        backgroundColor: Colors.redAccent,
-      ));
+          backgroundColor: Colors.redAccent,
+        ));
+      }
       return null;
     }
   }
@@ -111,20 +107,13 @@ class AuthService {
         'registrationTime': FieldValue.serverTimestamp(),
       });
 
-      // Navigate to the appropriate home page
-      if (userType == 'Traveler') {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => HomeTraveler()));
-      } else if (userType == 'Agency') {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => AgencyNavbar()));
-      }
-
       return user;
     } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: ${e.toString()}')));
+      print('Registration error: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration failed: ${e.toString()}')));
+      }
       return null;
     }
   }

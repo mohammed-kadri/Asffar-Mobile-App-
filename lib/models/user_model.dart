@@ -10,6 +10,7 @@ class UserModel {
   final bool submittedDocuments;
   final bool documentsAccepted;
   final String profilePictureUrl;
+  final String profileCoverPictureUrl;
   final String agencyName;
   final String ownerName;
   final bool accountVerified;
@@ -25,6 +26,7 @@ class UserModel {
     required this.submittedDocuments,
     required this.documentsAccepted,
     required this.profilePictureUrl,
+    required this.profileCoverPictureUrl,
     required this.agencyName,
     required this.ownerName,
     required this.travelerFirstName,
@@ -43,6 +45,7 @@ class UserModel {
       submittedDocuments: data['submittedDocuments'] ?? false,
       documentsAccepted: data['documentsAccepted'] ?? false,
       profilePictureUrl: data['profilePictureUrl'] ?? '',
+      profileCoverPictureUrl: data['profileCoverPictureUrl'] ?? '',
       agencyName: data['agencyName'] ?? '',
       ownerName: data['ownerName'] ?? '',
       travelerFirstName: data['travelerFirstName'] ?? '',
@@ -63,6 +66,7 @@ class UserModel {
       'submittedDocuments': submittedDocuments,
       'documentsAccepted': documentsAccepted,
       'profilePictureUrl': profilePictureUrl,
+      'profileCoverPictureUrl': profileCoverPictureUrl,
       'agencyName': agencyName,
       'ownerName': ownerName,
       'travelerFirstName': travelerFirstName,
@@ -81,6 +85,7 @@ class UserModel {
     bool? submittedDocuments,
     bool? documentsAccepted,
     String? profilePictureUrl,
+    String? profileCoverPictureUrl,
     String? agencyName,
     String? ownerName,
     String? travelerFirstName,
@@ -97,6 +102,7 @@ class UserModel {
       submittedDocuments: submittedDocuments ?? this.submittedDocuments,
       documentsAccepted: documentsAccepted ?? this.documentsAccepted,
       profilePictureUrl: profilePictureUrl ?? this.profilePictureUrl,
+      profileCoverPictureUrl: profileCoverPictureUrl ?? this.profileCoverPictureUrl,
       agencyName: agencyName ?? this.agencyName,
       ownerName: ownerName ?? this.ownerName,
       travelerFirstName: travelerFirstName ?? this.travelerFirstName,
@@ -116,6 +122,7 @@ class UserModel {
       submittedDocuments: data['submittedDocuments'] ?? this.submittedDocuments,
       documentsAccepted: data['documentsAccepted'] ?? this.documentsAccepted,
       profilePictureUrl: data['profilePictureUrl'] ?? this.profilePictureUrl,
+      profileCoverPictureUrl: data['profileCoverPictureUrl'] ?? this.profileCoverPictureUrl,
       agencyName: data['agencyName'] ?? this.agencyName,
       ownerName: data['ownerName'] ?? this.ownerName,
       travelerFirstName: data['travelerFirstName'] ?? this.travelerFirstName,

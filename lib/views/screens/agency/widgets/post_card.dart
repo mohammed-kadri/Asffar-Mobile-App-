@@ -1,29 +1,44 @@
 import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:untitled3/services/auth_service.dart';
 import 'package:untitled3/theme/app_theme.dart';
+import 'package:untitled3/views/screens/agency/post_details.dart';
 
 class PostCard extends StatefulWidget {
+  final String postId; // Add postId parameter
   final int price;
+  final bool isTrip;
   final String agencyName;
   final String destination;
   final String date;
+  final DateTime departDate;
+  final DateTime returnDate;
   final int availableSeats;
   final int duration;
   final String imageUrl;
   final String agencyImageUrl;
-  final Map<String, dynamic> agencyData; // Add agencyData parameter
+  final Map<String, dynamic> agencyData;
+  final bool showLikeButton; // Add this parameter
 
   const PostCard({
     Key? key,
+    required this.postId,
     required this.price,
+    required this.isTrip,
     required this.agencyName,
     required this.destination,
     required this.date,
+    required this.departDate,
+    required this.returnDate,
     required this.availableSeats,
     required this.duration,
     required this.imageUrl,
     required this.agencyImageUrl,
-    required this.agencyData, // Add agencyData parameter
+    required this.agencyData,
+    this.showLikeButton = true, // Default to true
   }) : super(key: key);
 
   @override
@@ -66,11 +81,11 @@ class _PostCardState extends State<PostCard> {
               ),
             ),
             Positioned(
-                top: 55,
-                right: 20,
+                top: 45,
+                right: 15,
                 child: Container(
-                  width: 90,
-                  height: 90,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
                     border: Border.all(
                       color:
@@ -82,19 +97,137 @@ class _PostCardState extends State<PostCard> {
                             .width)), // Same borderRadius as in ClipRRect
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.all(
-                        Radius.circular(MediaQuery.sizeOf(context).width)),
-                    child: Image.network(
-                      '${widget.agencyData['profilePictureUrl']}',
-                      height: 90,
-                      width: 90,
-                      fit: BoxFit.cover,
+                    borderRadius: BorderRadius.all(Radius.circular(15)),
+                    child: Builder(
+                      builder: (context) {
+                        final String? directUrl = widget.agencyData['profilePictureUrl'];
+                        final String? agencyId = widget.agencyData['uid'];
+
+                        // 1. If we have the URL directly, show it
+                        if (directUrl != null && directUrl.isNotEmpty) {
+                          return Image.network(
+                            directUrl,
+                            height: 90,
+                            width: 90,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _buildPlaceholderAvatar(),
+                          );
+                        }
+
+                        // 2. If no URL but we have ID, fetch it
+                        if (agencyId != null && agencyId.isNotEmpty) {
+                          return FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection('agencies')
+                                .doc(agencyId)
+                                .get(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data!.exists) {
+                                final data = snapshot.data!.data() as Map<String, dynamic>;
+                                final fetchedUrl = data['profilePictureUrl'];
+                                if (fetchedUrl != null && fetchedUrl.isNotEmpty) {
+                                  return Image.network(
+                                    fetchedUrl,
+                                    height: 90,
+                                    width: 90,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        _buildPlaceholderAvatar(),
+                                  );
+                                }
+                              }
+                              return _buildPlaceholderAvatar();
+                            },
+                          );
+                        }
+
+                        // 3. Fallback
+                        return _buildPlaceholderAvatar();
+                      },
                     ),
                   ),
                 )),
-            Positioned( 
-              right: 115,
-              top: 105,
+                
+            // Like Button
+            if (widget.showLikeButton)
+            Positioned(
+              top: 10,
+              left: 10,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: () {
+                   final user = Provider.of<AuthService>(context, listen: false).currentUser;
+                   if (user == null) {
+                     return null;
+                   }
+                   return FirebaseFirestore.instance
+                       .collection('travelers')
+                       .doc(user.uid)
+                       .collection('favorites')
+                       .doc(widget.postId)
+                       .snapshots();
+                }(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    // print("DEBUG: Stream error: ${snapshot.error}");
+                  }
+                  
+                  final bool isLiked = snapshot.hasData && snapshot.data!.exists;
+                  
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        isLiked ? Icons.favorite : Icons.favorite_border,
+                        color: isLiked ? Colors.red : Colors.grey[600],
+                        size: 24,
+                      ),
+                      onPressed: () async {
+                         final user = Provider.of<AuthService>(context, listen: false).currentUser;
+                         if (user == null) return;
+                         
+                         final favoritesRef = FirebaseFirestore.instance
+                             .collection('travelers')
+                             .doc(user.uid)
+                             .collection('favorites')
+                             .doc(widget.postId);
+
+                         try {
+                           if (isLiked) {
+                             await favoritesRef.delete();
+                           } else {
+                             await favoritesRef.set({
+                               'postId': widget.postId,
+                               'isTrip': widget.isTrip,
+                               'price': widget.price,
+                               'agencyName': widget.agencyName,
+                               'destination': widget.destination,
+                               'date': widget.date,
+                               'departDate': widget.departDate,
+                               'returnDate': widget.returnDate,
+                               'availableSeats': widget.availableSeats,
+                               'duration': widget.duration,
+                               'imageUrl': widget.imageUrl,
+                               'agencyImageUrl': widget.agencyImageUrl,
+                               'agencyData': widget.agencyData,
+                               'savedAt': FieldValue.serverTimestamp(),
+                             });
+                           }
+                         } catch (e) {
+                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                         }
+                      },
+                    ),
+                  );
+                }
+              ),
+            ),
+            Positioned(  
+              right: 125,
+              top: 102,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +268,7 @@ class _PostCardState extends State<PostCard> {
                               fontFamily: AppTheme
                                   .lightTheme.textTheme.bodyMedium!.fontFamily,
                               fontWeight: FontWeight.w500)),
-                      Text('15/01/2025',
+                      Text( DateFormat('yyyy/MM/dd').format(widget.departDate).toString(),
                           style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF313131),
@@ -179,7 +312,7 @@ class _PostCardState extends State<PostCard> {
                               fontFamily: AppTheme
                                   .lightTheme.textTheme.bodyMedium!.fontFamily,
                               fontWeight: FontWeight.w500)),
-                      Text('5',
+                      Text(widget!.duration.toString(),
                           style: TextStyle(
                               fontSize: 14,
                               color: Color(0xFF313131),
@@ -213,7 +346,18 @@ class _PostCardState extends State<PostCard> {
                 left: 10,
                 bottom: 10,
                 child: InkWell(
-                  onTap: () {}, // Your onPressed logic goes here
+                  onTap: () {
+                    // Navigate to post details
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetails(
+                          postId: widget.postId,
+                          isTrip: widget.isTrip,
+                        ),
+                      ),
+                    );
+                  },
                   borderRadius: BorderRadius.circular(
                       4), // Set the border radius for the container
                   child: Container(
@@ -259,6 +403,18 @@ class _PostCardState extends State<PostCard> {
       ),
     );
   }
+  Widget _buildPlaceholderAvatar() {
+    return Container(
+      width: 90,
+      height: 90,
+      color: Colors.grey[100],
+      child: Icon(
+        Icons.person,
+        size: 50,
+        color: Colors.grey[400],
+      ),
+    );
+  }
 }
 
 Widget buildInfoRow(String label, String value) {
@@ -273,7 +429,6 @@ Widget buildInfoRow(String label, String value) {
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
-          textDirection: TextDirection.rtl,
         ),
         const SizedBox(width: 8),
         Text(
@@ -282,7 +437,6 @@ Widget buildInfoRow(String label, String value) {
             fontSize: 14,
             color: Colors.grey[600],
           ),
-          textDirection: TextDirection.rtl,
         ),
       ],
     ),

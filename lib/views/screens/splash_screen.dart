@@ -10,6 +10,8 @@ import 'package:untitled3/views/screens/auth/login_traveler.dart';
 import 'package:untitled3/views/screens/agency/home.dart';
 import 'package:untitled3/views/screens/traveler/home.dart';
 
+import 'auth/login_agency.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -48,18 +50,18 @@ class _SplashScreenState extends State<SplashScreen> {
                             } else if (userType == 'Agency') {
                               return AgencyNavbar();
                             } else {
-                              return LoginTraveler();
+                              return LoginAgency();
                             }
                           } else {
-                            return LoginTraveler();
+                            return LoginAgency();
                           }
                         },
                       );
                     } else {
-                      return LoginTraveler();
+                      return LoginAgency();
                     }
                   } else {
-                    return LoginTraveler();
+                    return LoginAgency();
                   }
                 },
               );

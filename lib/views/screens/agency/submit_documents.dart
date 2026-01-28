@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:untitled3/app_localizations.dart';
 import 'package:untitled3/providers/auth_provider.dart';
 import 'package:untitled3/services/auth_service.dart';
 
@@ -28,32 +29,77 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
   }
 
   Future<void> _submitDocuments(String folderName) async {
-    setState(() {
-      _isLoading = true;
-    });
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authService.currentUser;
 
-    if (user != null) {
+      if (user == null) {
+        print('Error: User is null');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('User not found')),
+        );
+        return;
+      }
+
       List<String> imageUrls = [];
+
+      // Check if at least one image is selected
+      if (_imagePaths.every((path) => path.isEmpty)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!
+                  .translate('pleaseSelectImages'))),
+        );
+        return;
+      }
+
       for (int i = 0; i < _imagePaths.length; i++) {
         if (_imagePaths[i].isNotEmpty) {
-          String imageUrl = await authService.uploadImage(
-              _imagePaths[i], user.id, 'document_$i.jpg', folderName);
-          imageUrls.add(imageUrl);
+          try {
+            String imageUrl = await authService.uploadImage(
+              _imagePaths[i],
+              user.uid,
+              'document_$i.jpg',
+              folderName,
+            );
+            imageUrls.add(imageUrl);
+          } catch (e) {
+            print('Error uploading image $i: $e');
+            throw e;
+          }
         }
       }
-      String submittedText = _textController.text;
-      await authService.submitDocuments(user.id, imageUrls, submittedText);
+
+      await authService.submitDocuments(
+          user.uid, imageUrls, _textController.text);
+
+      // Verify account only after successful document submission
+      await Provider.of<AuthService>(context, listen: false)
+          .verifyAgencyAccount(user.uid);
+
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Documents submitted successfully')));
-      setState(() {
-        _isLoading = false;
-      });
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .translate('documentsSubmittedSuccessfully')),
+        ),
+      );
+
       Navigator.of(context).pop();
-    } else {
+    } catch (e) {
+      print('Error in _submitDocuments: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!
+              .translate('errorSubmittingDocuments')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
       setState(() {
         _isLoading = false;
       });
@@ -78,7 +124,7 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
             )),
         centerTitle: true,
         title: Text(
-          'إضافة الوثائق المطلوبة',
+          AppLocalizations.of(context)!.translate('submitRequiredDocuments'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 18,
@@ -114,6 +160,16 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('commercialRegisterImage'),
+                            style:
+                                TextStyle(
+                                    fontFamily: AppTheme.lightTheme.textTheme
+                                        .bodyMedium!.fontFamily,
+                                    color: Color(0xFF313131),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 17)),
                         ElevatedButton(
                             onPressed: () async {
                               _pickImage(0);
@@ -128,7 +184,7 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                                   const EdgeInsets.only(left: 30, right: 30),
                             ),
                             child: Text(
-                              'أضف',
+                              AppLocalizations.of(context)!.translate('add'),
                               style: TextStyle(
                                 fontFamily: AppTheme.lightTheme.textTheme
                                     .bodyMedium!.fontFamily,
@@ -136,13 +192,6 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                                 fontWeight: FontWeight.w400,
                               ),
                             )),
-                        Text('صورة السجل التجاري',
-                            style: TextStyle(
-                                fontFamily: AppTheme.lightTheme.textTheme
-                                    .bodyMedium!.fontFamily,
-                                color: Color(0xFF313131),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 17)),
                       ],
                     ),
                   ),
@@ -160,6 +209,15 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text(
+                            AppLocalizations.of(context)!
+                                .translate('tourismLicenseImage'),
+                            style: TextStyle(
+                                fontFamily: AppTheme.lightTheme.textTheme
+                                    .bodyMedium!.fontFamily,
+                                color: Color(0xFF313131),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 17)),
                         ElevatedButton(
                             onPressed: () {
                               _pickImage(1);
@@ -174,7 +232,7 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                                   const EdgeInsets.only(left: 30, right: 30),
                             ),
                             child: Text(
-                              'أضف',
+                              AppLocalizations.of(context)!.translate('add'),
                               style: TextStyle(
                                 fontFamily: AppTheme.lightTheme.textTheme
                                     .bodyMedium!.fontFamily,
@@ -182,13 +240,6 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                                 fontWeight: FontWeight.w400,
                               ),
                             )),
-                        Text('صورة إعتماد السياحة',
-                            style: TextStyle(
-                                fontFamily: AppTheme.lightTheme.textTheme
-                                    .bodyMedium!.fontFamily,
-                                color: Color(0xFF313131),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 17)),
                       ],
                     ),
                   ),
@@ -220,7 +271,8 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                                     });
                                   },
                                   child: Text(
-                                    'حذف',
+                                    AppLocalizations.of(context)!
+                                        .translate('delete'),
                                     style: TextStyle(
                                       fontFamily: AppTheme.lightTheme.textTheme
                                           .bodyMedium!.fontFamily,
@@ -242,26 +294,23 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                       controller: _textController,
                       maxLength: 200,
                       decoration: InputDecoration(
-                          alignLabelWithHint:
-                              true, // Aligns with the hint text if multiline
-                          border: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color(0xFF313131).withAlpha(200)),
-                          ),
-                          labelStyle: TextStyle(),
-                          // labelText: 'Enter additional information',
-                          label: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              "أدخل معلومات إضافية إذا أردت",
-                              textDirection: TextDirection.rtl,
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                  fontSize: 17,
-                                  fontFamily: AppTheme.lightTheme.textTheme
-                                      .bodyMedium!.fontFamily),
-                            ),
-                          )),
+                        alignLabelWithHint:
+                            true, // Aligns with the hint text if multiline
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Color(0xFF313131).withAlpha(200)),
+                        ),
+                        labelStyle: TextStyle(),
+                        // labelText: 'Enter additional information',
+                        label: Text(
+                          AppLocalizations.of(context)!
+                              .translate('enterAdditionalInfo'),
+                          style: TextStyle(
+                              fontSize: 17,
+                              fontFamily: AppTheme
+                                  .lightTheme.textTheme.bodyMedium!.fontFamily),
+                        ),
+                      ),
                       maxLines: 3,
                     ),
                   ),
@@ -274,7 +323,7 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                           child: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 20.0),
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             _submitDocuments('documents_verification')
                                 .then((_) async {
                               await Provider.of<AuthService>(context,
@@ -285,7 +334,7 @@ class _SubmitDocumentsState extends State<SubmitDocuments> {
                           child: Padding(
                             padding: EdgeInsets.only(top: 17, bottom: 12),
                             child: Text(
-                              "أرسل",
+                              AppLocalizations.of(context)!.translate('submit'),
                               style: TextStyle(
                                 fontSize: 17,
                                 fontFamily: AppTheme.lightTheme.textTheme

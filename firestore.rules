@@ -2,18 +2,113 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2025, 3, 12);
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
     }
+    
+    // Helper function to check if user is the owner of the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Travelers collection - users can only read/write their own data
+    match /travelers/{travelerId} {
+      allow read: if isOwner(travelerId);
+      allow create: if isAuthenticated() && request.auth.uid == travelerId;
+      allow update, delete: if isOwner(travelerId);
+    }
+
+    // Favorites collection (added for like functionality)
+    match /travelers/{travelerId}/favorites/{favoriteId} {
+      allow read, write: if isOwner(travelerId);
+    }
+
+    // Favorites collection (flattened rule for better reliability)
+    match /travelers/{travelerId}/favorites/{favoriteId} {
+      allow read, write: if isOwner(travelerId);
+    }
+    
+    // Agencies collection - users can only read/write their own data
+    // Agencies collection - users can only read/write their own data
+    match /agencies/{agencyId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && request.auth.uid == agencyId;
+      allow update, delete: if isOwner(agencyId);
+    }
+    
+    // Support chats collection - users can only read/write their own messages
+    match /support_chats/{userId} {
+      allow read, write: if isOwner(userId);
+      
+      match /messages/{messageId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+    
+    // Subscriptions collection - users can only read/write their own subscription
+    match /subscriptions/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create, update, delete: if isOwner(userId);
+    }
+    
+    // Documents verification collection - users can only read/write their own documents
+    match /documents_verification/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Trips collection - anyone can read, only authenticated agencies can create/update/delete their own trips
+    match /trips/{tripId} {
+      allow read: if true; // Public read access for travelers to browse trips
+      allow create: if isAuthenticated() && request.resource.data.agencyId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.agencyId == request.auth.uid;
+    }
+    
+    // Services collection - anyone can read, only authenticated agencies can create/update/delete their own services
+    match /services/{serviceId} {
+      allow read: if true; // Public read access for travelers to browse services
+      allow create: if isAuthenticated() && request.resource.data.agencyId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.agencyId == request.auth.uid;
+    }
+    
+    // Payment verification collection - users can only read/write their own payment verification
+    match /payment_verification/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Coupons collection - anyone can read, only admins can write (adjust as needed)
+    match /coupons/{couponId} {
+      allow read: if true; // Anyone can read to apply coupons
+      allow write: if isAuthenticated(); // Adjust this based on your admin logic
+    }
+    
+    // Refused payments collection - users can only read/write their own refused payments
+    match /refused/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // Chats collection - strict privacy
+    match /chats/{chatId} {
+      // Only participants can read the chat metadata
+      allow read: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      // Anyone authenticated can create a new chat (validation could be stricter)
+      allow create: if isAuthenticated(); 
+      // Only participants can update (e.g., lastMessage)
+      allow update: if isAuthenticated() && request.auth.uid in resource.data.participants;
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && 
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+
+    // Add any other collections you need to secure here
+    // For example, if you have a public collection that everyone can read:
+    // match /public/{document=**} {
+    //   allow read: if true;
+    //   allow write: if isAuthenticated();
+    // }
   }
 }

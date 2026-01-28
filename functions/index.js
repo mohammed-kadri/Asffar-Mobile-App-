@@ -1,7 +1,15 @@
+
+
+
 const { onRequest } = require("firebase-functions");
 const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions');
+//import {getFirestore} from "firebase-admin/firestore";
+
+//import {initializeApp} from "firebase-admin/app";
 const admin = require('firebase-admin');
+
+
 
 admin.initializeApp();
  
@@ -71,7 +79,7 @@ exports.verifyAgencyAccount = functions.https.onRequest(async (req, res) => {
 
 exports.getSubscriptionPrices = functions.https.onRequest(async (req, res) => {
     try {
-        const subscriptionIds = ['1', '6', '12'];
+        const subscriptionIds = ['1', '3', '12'];
         const pricesMap = {};
 
         for (const id of subscriptionIds) {
@@ -119,6 +127,61 @@ exports.checkPaymentVerification = functions.https.onRequest(async (req, res) =>
     }
 });
 
+
+exports.checkSubscription = functions.https.onRequest(async (req, res) => {
+    const userId = req.query.userId;
+
+    if (!userId) {
+        return res.status(400).send('User ID is required');
+    }
+
+    try {
+        const doc = await admin.firestore().collection('subscriptions').doc(userId).get();
+
+        if (doc.exists) {
+            return res.status(200).json({
+                data: doc.data()
+            });
+        } else {
+            return res.status(200).json({
+                data: null
+            });
+        }
+    } catch (error) {
+        console.error('Error checking subscription:', error);
+        return res.status(500).send('Internal Server Error');
+    }
+});
+
+
+//exports.archivePaymentVerification = functions.firestore
+//    .document('payment_verification/{docId}')
+//    .onDelete(async (snap, context) => {
+//        try {
+//            const deletedData = snap.data();
+//            const docId = context.params.docId;
+//
+//            // Add timestamp to the archived data
+//            const dataToArchive = {
+//                ...deletedData,
+//                archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+//                originalId: docId,
+//                deletedAt: new Date().toISOString()
+//            };
+//
+//            // Save to archive collection
+//            await admin.firestore()
+//                .collection('payment_verification_archive')
+//                .doc(docId)
+//                .set(dataToArchive);
+//
+//            console.log(`Payment verification ${docId} archived successfully`);
+//            return null; // Correct return for background functions
+//        } catch (error) {
+//            console.error('Error archiving payment verification:', error);
+//            return null; // Correct return for background functions
+//        }
+//    });
 
 //exports.deletePostImages = functions.firestore.document('posts/{postId}')
 //    .onDelete(async (snap, context) => {

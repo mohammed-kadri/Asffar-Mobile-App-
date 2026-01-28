@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:untitled3/theme/app_theme.dart';
 import 'package:untitled3/views/screens/agency/agency_profile.dart';
 import 'package:untitled3/views/screens/agency/home.dart';
+import 'package:untitled3/views/screens/agency/messages.dart';
+import 'package:untitled3/views/screens/agency/statistics.dart';
 import 'package:untitled3/views/screens/agency/submit_documents.dart';
 import 'package:untitled3/views/screens/agency/add_post.dart';
 import 'package:untitled3/app_localizations.dart';
@@ -24,13 +26,23 @@ class AgencyNavbar extends StatefulWidget {
 class _AgencyNavbarState extends State<AgencyNavbar> {
   int _selectedIndex = 0;
   bool _isLoading = false;
+  late final HomeAgency homeAgency;
+  late final List<Widget> _pages;
+  final PageStorageBucket _bucket = PageStorageBucket();
 
-  static List<Widget> _widgetOptions = <Widget>[
-    HomeAgency(),
-    HomeAgency(),
-    AddPost(),
-    AgencyProfile(),
-  ];
+    @override
+  void initState() {
+    super.initState();
+    // Initialize _homeAgency in initState
+    homeAgency = HomeAgency(key: const PageStorageKey('Home'));
+    _pages = [
+      homeAgency,
+      Statistics(),
+      Messages(),
+      AgencyProfile(),
+    ];
+  }
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -262,38 +274,6 @@ class _AgencyNavbarState extends State<AgencyNavbar> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.message),
-              title: Text(
-                AppLocalizations.of(context)!.translate('messages'),
-                style: TextStyle(
-                  color: Color(0xFF313131),
-                  fontSize: 16,
-                  fontFamily:
-                      AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(2);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.person),
-              title: Text(
-                AppLocalizations.of(context)!.translate('agencyProfile'),
-                style: TextStyle(
-                  color: Color(0xFF313131),
-                  fontSize: 16,
-                  fontFamily:
-                      AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _onItemTapped(3);
-              },
-            ),
-            ListTile(
               leading: Icon(Icons.add),
               title: Text(
                 AppLocalizations.of(context)!.translate('addPost'),
@@ -321,6 +301,21 @@ class _AgencyNavbarState extends State<AgencyNavbar> {
               ),
               onTap: () {
                 Navigator.pushNamed(context, '/change_language');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.support_agent),
+              title: Text(
+                AppLocalizations.of(context)!.translate('contactSupport'),
+                style: TextStyle(
+                  color: Color(0xFF313131),
+                  fontSize: 16,
+                  fontFamily:
+                  AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+                ),
+              ),
+              onTap: () {
+                Navigator.pushNamed(context, '/contact_support');
               },
             ),
             ListTile(
@@ -375,8 +370,12 @@ class _AgencyNavbarState extends State<AgencyNavbar> {
       ),
       body: Stack(
         children: [
-          Center(
-            child: _widgetOptions.elementAt(_selectedIndex),
+          PageStorage(
+            bucket: _bucket,
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: _pages,
+            ),
           ),
           if (_isLoading)
             Container(
@@ -425,7 +424,8 @@ class _AgencyNavbarState extends State<AgencyNavbar> {
                     height: 2.1,
                     fontWeight: FontWeight.w900,
                     fontFamily:
-                        AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily),
+                        AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily
+                ),
               ),
               GButton(
                 icon: _selectedIndex == 2
@@ -437,7 +437,7 @@ class _AgencyNavbarState extends State<AgencyNavbar> {
                     height: 2.1,
                     fontWeight: FontWeight.w900,
                     fontFamily:
-                        AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily),
+                     AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily),
               ),
               GButton(
                 icon: _selectedIndex == 3

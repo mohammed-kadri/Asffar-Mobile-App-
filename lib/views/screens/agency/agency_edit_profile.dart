@@ -195,6 +195,37 @@ class _AgencyEditProfileState extends State<AgencyEditProfile> {
                     ),
                   ),
                   SizedBox(height: 20),
+                  InkWell(
+                    onTap: () async {
+                      await Provider.of<AuthProvider>(context, listen: false)
+                          .uploadCoverPicture(context);
+                    },
+                    hoverColor: Colors.transparent,
+                    child: Column(
+                      children: [
+                        SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context)!
+                                  .translate('changeCoverPicture'),
+                              style: TextStyle(
+                                color: Color(0xFF313131).withAlpha(200),
+                                fontWeight: FontWeight.w500,
+                                fontFamily: AppTheme.lightTheme.textTheme
+                                    .bodyMedium?.fontFamily,
+                              ),
+                            ),
+                            Icon(Icons.arrow_forward_ios_rounded, size: 15),
+                          ],
+                        ),
+                        SizedBox(height: 8),
+                        Divider(color: Colors.black.withAlpha(300), height: 0),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(

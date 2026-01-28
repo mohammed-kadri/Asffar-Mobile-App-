@@ -7,6 +7,7 @@ import 'package:quickalert/widgets/quickalert_dialog.dart';
 import 'package:untitled3/providers/auth_provider.dart';
 import 'package:untitled3/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:untitled3/app_localizations.dart';
 import '../../../theme/app_theme.dart';
 
 class SubmitPaymentConfirmation extends StatefulWidget {
@@ -38,7 +39,6 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
   var data;
   @override
   void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
     super.didChangeDependencies();
 
     authService = Provider.of<AuthService>(context, listen: false);
@@ -58,8 +58,6 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
         throw Exception('User not found');
       }
 
-      // Get the data passed to this screen
-      // Upload images and get URLs
       List<String> imageUrls = [];
       for (int i = 0; i < _imagePaths.length; i++) {
         if (_imagePaths[i].isNotEmpty) {
@@ -73,7 +71,6 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
         }
       }
 
-      // Create payment verification document
       await FirebaseFirestore.instance
           .collection('payment_verification')
           .doc(user.uid)
@@ -82,7 +79,7 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
         'subscriptionType': data['selectedSubscriptionType'],
         'price': data['price'],
         'duration': data['selectedPeriod'],
-        'couponId': data['couponId'] ?? '', // Empty string if no coupon
+        'couponId': data['couponId'] ?? '',
         'status': 'pending',
         'userId': user.uid,
         'additionalComment': _textController.text,
@@ -91,14 +88,11 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
         'adminFeedback': '',
       });
 
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(content: Text('تم إرسال الطلب بنجاح')),
-      // );
-
       setState(() {
         _isLoading = false;
       });
-      Navigator.of(context).pushNamedAndRemoveUntil('/agency_navbar', (Route<dynamic> route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          '/agency_navbar', (Route<dynamic> route) => false);
     } catch (e) {
       print('Error submitting payment verification: $e');
       setState(() {
@@ -134,7 +128,8 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
             )),
         centerTitle: true,
         title: Text(
-          'إرسال صور تأكيد الدفع',
+          AppLocalizations.of(context)!
+              .translate('sendPaymentConfirmationImages'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 18,
@@ -162,16 +157,15 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  SizedBox(
-                    height: 20,
-                  ),
+                  SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'قم بإختيار الصور',
+                          AppLocalizations.of(context)!
+                              .translate('chooseImages'),
                           style: TextStyle(
                               fontFamily: AppTheme
                                   .lightTheme.textTheme.bodyMedium!.fontFamily,
@@ -198,7 +192,7 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
                                   const EdgeInsets.only(left: 30, right: 30),
                             ),
                             child: Text(
-                              'أضف',
+                              AppLocalizations.of(context)!.translate('add'),
                               style: TextStyle(
                                 fontFamily: AppTheme.lightTheme.textTheme
                                     .bodyMedium!.fontFamily,
@@ -215,12 +209,10 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
                       color: Color(0xFF313131).withOpacity(0.1),
                     ),
                   ),
-                  SizedBox(
-                    height: 10,
-                  ),
+                  SizedBox(height: 10),
                   Wrap(
-                    spacing: 10.0, // gap between adjacent chips
-                    runSpacing: 10.0, // gap between lines
+                    spacing: 10.0,
+                    runSpacing: 10.0,
                     children: [
                       for (int i = 0; i < 5; i++) ...[
                         if (_imagePaths[i].isNotEmpty) ...[
@@ -238,7 +230,8 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
                                   });
                                 },
                                 child: Text(
-                                  'حذف',
+                                  AppLocalizations.of(context)!
+                                      .translate('delete'),
                                   style: TextStyle(
                                     fontFamily: AppTheme.lightTheme.textTheme
                                         .bodyMedium!.fontFamily,
@@ -256,36 +249,28 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
                     child: TextField(
-                      textDirection: TextDirection.rtl,
                       controller: _textController,
                       maxLength: 200,
                       decoration: InputDecoration(
-                          alignLabelWithHint:
-                              true, // Aligns with the hint text if multiline
-                          border: UnderlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color(0xFF313131).withAlpha(200)),
-                          ),
-                          labelStyle: TextStyle(),
-                          // labelText: 'Enter additional information',
-                          label: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              "أدخل معلومات إضافية إذا أردت",
-                              textDirection: TextDirection.rtl,
-                              textAlign: TextAlign.right,
-                              style: TextStyle(
-                                  fontSize: 17,
-                                  fontFamily: AppTheme.lightTheme.textTheme
-                                      .bodyMedium!.fontFamily),
-                            ),
-                          )),
+                        alignLabelWithHint: true,
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide(
+                              color: Color(0xFF313131).withAlpha(200)),
+                        ),
+                        labelStyle: TextStyle(),
+                        label: Text(
+                          AppLocalizations.of(context)!
+                              .translate('enterAdditionalInfo'),
+                          style: TextStyle(
+                              fontSize: 17,
+                              fontFamily: AppTheme
+                                  .lightTheme.textTheme.bodyMedium!.fontFamily),
+                        ),
+                      ),
                       maxLines: 3,
                     ),
                   ),
-                  SizedBox(
-                    height: 20,
-                  ),
+                  SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
@@ -293,23 +278,44 @@ class _SubmitPaymentConfirmationState extends State<SubmitPaymentConfirmation> {
                           padding: EdgeInsets.symmetric(horizontal: 20.0),
                           child: ElevatedButton(
                             onPressed: () async {
+                              // Check if any image is selected
+                              if (_imagePaths.every((path) => path.isEmpty)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      AppLocalizations.of(context)!
+                                          .translate('pleaseSelectImages'),
+                                      style: TextStyle(
+                                        fontFamily: AppTheme.lightTheme
+                                            .textTheme.bodyMedium!.fontFamily,
+                                      ),
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
+
                               _submitPictures('payment_verification', context)
                                   .then((_) {
                                 QuickAlert.show(
                                     context: context,
-                                    confirmBtnText: 'تمام',
-                                    confirmBtnColor: AppTheme.lightTheme.primaryColor,
+                                    confirmBtnText:
+                                        AppLocalizations.of(context)!
+                                            .translate('done'),
+                                    confirmBtnColor:
+                                        AppTheme.lightTheme.primaryColor,
                                     type: QuickAlertType.success,
-
-                                    text:
-                                        'تم إرسال صور إثبات الدفع بنجاح. ما عليك سوى انتظار الموافقة من الإدارة',
-                                    title: 'اكتملت العملية');
+                                    text: AppLocalizations.of(context)!
+                                        .translate('paymentConfirmationSent'),
+                                    title: AppLocalizations.of(context)!
+                                        .translate('success'));
                               });
                             },
                             child: Padding(
                               padding: EdgeInsets.only(top: 17, bottom: 12),
                               child: Text(
-                                "أرسل",
+                                AppLocalizations.of(context)!.translate('send'),
                                 style: TextStyle(
                                   fontSize: 17,
                                   fontFamily: AppTheme.lightTheme.textTheme

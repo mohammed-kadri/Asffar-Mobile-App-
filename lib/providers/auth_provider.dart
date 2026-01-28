@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/services/auth_service.dart';
 import 'package:untitled3/models/user_model.dart';
 import 'package:untitled3/theme/app_theme.dart';
+import 'package:untitled3/views/screens/agency/agency_navbar.dart';
+import 'package:untitled3/views/screens/traveler/home.dart';
+import 'package:untitled3/views/screens/traveler/traveler_navbar.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -21,10 +24,42 @@ class AuthProvider with ChangeNotifier {
     if (firebaseUser != null) {
       DocumentSnapshot userDoc =
           await _authService.getUserData(firebaseUser.uid, expectedUserType);
+      
+      // Check if user document exists and has data
+      if (!userDoc.exists || userDoc.data() == null) {
+        print('Error: User document does not exist or has no data');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'حدث خطأ في تحميل بيانات المستخدم. الرجاء المحاولة مرة أخرى.',
+              textDirection: TextDirection.rtl,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontFamily: AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+              ),
+            ),
+            backgroundColor: Colors.redAccent,
+          ));
+        }
+        return;
+      }
+      
       _user =
           UserModel.fromMap(userDoc.data() as Map<String, dynamic>, userDoc.id);
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('userType', expectedUserType);
+      
+      // Navigate to the appropriate home page after successful login
+      if (context.mounted) {
+        if (expectedUserType == 'Traveler') {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => TravelerNavbar()));
+        } else if (expectedUserType == 'Agency') {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => AgencyNavbar()));
+        }
+      }
     }
     notifyListeners();
   }
@@ -51,13 +86,47 @@ class AuthProvider with ChangeNotifier {
         submittedDocuments: false,
         accountVerified: false,
         profilePictureUrl: '',
+        profileCoverPictureUrl: '',
         agencyName: agencyName,
         ownerName: ownerName,
         travelerFirstName: '',
         travelerLastName: '',
       );
+
+      await FirebaseFirestore.instance
+          .collection('subscriptions')
+          .doc(firebaseUser.uid)
+          .set({
+        'userId': firebaseUser.uid,
+        'type': 'free', // Initial free subscription
+        'startDate': FieldValue.serverTimestamp(),
+        'endDate':
+            FieldValue.serverTimestamp(), // Same as start date for free tier
+        'status': 'active',
+        'duration': 0, // 0 for free tier
+        'features': {
+          'maxPosts': 3, // Example feature limit
+          'maxImages': 5, // Example feature limit
+          'canChat': false, // Example feature
+          'verifiedBadge': false // Example feature
+        },
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp()
+      });
+
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('userType', userType);
+      
+      // Navigate to the appropriate home page after successful registration
+      if (context.mounted) {
+        if (userType == 'Traveler') {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => HomeTraveler()));
+        } else if (userType == 'Agency') {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => AgencyNavbar()));
+        }
+      }
     }
     notifyListeners();
   }
@@ -126,7 +195,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> uploadProfilePicture(BuildContext context) async {
-    String? imagePath = await pickAndCropImage();
+    String? imagePath = await pickAndCropImage("profile");
     if (imagePath != null && _user != null) {
       String imageUrl = await uploadImage(imagePath, _user!.id,
           'profile_picture.jpg', 'agencies_profile_pictures');
@@ -148,7 +217,30 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> pickAndCropImage() async {
+  Future<void> uploadCoverPicture(BuildContext context) async {
+    String? imagePath = await pickAndCropImage("cover");
+    if (imagePath != null && _user != null) {
+      String imageUrl = await uploadImage(imagePath, _user!.id,
+          'cover_picture.jpg', 'agencies_covers_pictures');
+      await updateUserData({'profileCoverPictureUrl': imageUrl});
+      _user = _user!.copyWith(profileCoverPictureUrl: imageUrl);
+      notifyListeners();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          'تم تحديث الصورة الشخصية بنجاح',
+          textDirection: TextDirection.rtl,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontFamily: AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+          ),
+        ),
+        backgroundColor: Colors.green,
+      ));
+    }
+  }
+
+  Future<String?> pickAndCropImage(String type) async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -161,7 +253,9 @@ class AuthProvider with ChangeNotifier {
             toolbarColor: AppTheme.lightTheme.colorScheme.primary,
             toolbarWidgetColor: Colors.white,
             aspectRatioPresets: [
-              CropAspectRatioPreset.square,
+              type == "profile"
+                  ? CropAspectRatioPreset.square
+                  : CropAspectRatioPreset.ratio16x9,
             ],
             initAspectRatio: CropAspectRatioPreset.square,
           ),

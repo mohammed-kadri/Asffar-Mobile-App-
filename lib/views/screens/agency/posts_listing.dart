@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:untitled3/providers/auth_provider.dart';
 import 'package:untitled3/services/auth_service.dart';
-import 'package:untitled3/views/screens/agency/post_card.dart';
-
+import 'package:untitled3/views/screens/agency/widgets/post_card.dart';
+import 'package:rxdart/rxdart.dart';
 import '../../../theme/app_theme.dart';
 
 class PostsListing extends StatefulWidget {
@@ -18,6 +18,7 @@ class PostsListing extends StatefulWidget {
 
 class _PostsListingState extends State<PostsListing> {
   Map<String, dynamic>? agencyData;
+
   var data;
   @override
   void initState() {
@@ -43,8 +44,33 @@ class _PostsListingState extends State<PostsListing> {
     }
   }
 
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/home_add_post.jpg',
+            width: MediaQuery.of(context).size.width * 0.75,
+          ),
+          SizedBox(height: 10),
+          Text(
+            'لم تقم باضافة أي منشور بعد',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+              fontFamily: AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<AuthService>(context, listen: false).currentUser;
+
     if (agencyData == null) {
       return Center(child: CircularProgressIndicator());
     }
@@ -70,66 +96,77 @@ class _PostsListingState extends State<PostsListing> {
           ],
         ),
         Expanded(
-          child: FirestorePagination(
-            limit: 5, // Reduced from 420 to a more reasonable number
-            viewType: ViewType.list,
-            query: FirebaseFirestore.instance
-                .collection('services')
-                .where('agencyId',
-                    isEqualTo: Provider.of<AuthService>(context, listen: false)
-                        .currentUser!
-                        .uid)
-                .orderBy('postedDate', descending: true), // Add ordering
-            bottomLoader: const Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Colors.blue,
-              ),
-            ),
-            itemBuilder: (context, documentSnapshots, index) {
-              // Access the document snapshot correctly
-              final doc = documentSnapshots[index];
-              // Get the data as a Map
-              data = doc.data() as Map<String, dynamic>?;
+          child: StreamBuilder<List<QuerySnapshot>>(
+            stream: CombineLatestStream.list([
+              FirebaseFirestore.instance
+                  .collection('services')
+                  .where('agencyId', isEqualTo: user!.uid)
+                  .orderBy('postedDate', descending: true)
+                  .snapshots(),
+              FirebaseFirestore.instance
+                  .collection('trips')
+                  .where('agencyId', isEqualTo: user!.uid)
+                  .orderBy('postedDate', descending: true)
+                  .snapshots(),
+            ]),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
 
-              if (data == null) return Container();
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
 
-              return PostCard(
-                price: data['price'] ?? 0,
-                agencyName: data['agencyName'] ?? '',
-                destination: data['destination'] ?? '',
-                date: data['date'] ?? '',
-                availableSeats: data['availableSeats'] ?? 0,
-                duration: data['duration'] ?? 0,
-                imageUrl: data['imageUrl'] ?? '',
-                agencyImageUrl: data['agencyImageUrl'] ?? '',
-                agencyData: agencyData ?? {}, // Pass agency data
+              if (!snapshot.hasData) {
+                return _buildEmptyState();
+              }
+
+              // Combine both collections
+              List<DocumentSnapshot> allDocs = [];
+              snapshot.data![0].docs.forEach((doc) => allDocs.add(doc));
+              snapshot.data![1].docs.forEach((doc) => allDocs.add(doc));
+
+              // Sort by posted date
+              allDocs.sort((a, b) {
+                DateTime dateA =
+                    (a.data() as Map<String, dynamic>)['postedDate'].toDate();
+                DateTime dateB =
+                    (b.data() as Map<String, dynamic>)['postedDate'].toDate();
+                return dateB.compareTo(dateA);
+              });
+
+              if (allDocs.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return ListView.builder(
+                itemCount: allDocs.length,
+                itemBuilder: (context, index) {
+                  final doc = allDocs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final isTrip = doc.reference.path.contains('trips');
+
+                  return PostCard(
+                    postId: doc.id, // Pass the post ID
+                    price: data['price'] ?? 0,
+                    agencyName: data['agencyName'] ?? '',
+                    destination: data['destination'] ?? '',
+                    date: data['date'] ?? '',
+                    departDate: data['departDate']?.toDate() ?? DateTime.now(),
+                    returnDate: data['returnDate']?.toDate() ?? DateTime.now(),
+                    isTrip: isTrip, // Use the determined isTrip value
+                    availableSeats: data['availableSeats'] ?? 0,
+                    duration: data['duration'] ?? 0,
+                    imageUrl: data['imageUrl'] ?? '',
+                    agencyImageUrl: data['agencyImageUrl'] ?? '',
+                    agencyData: agencyData ?? {},
+                    showLikeButton: false, // Disable like
+                    // isTrip: isTrip,
+                  );
+                },
               );
             },
-            // Add empty state
-
-            onEmpty: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/home_add_post.jpg',
-                    width: MediaQuery.of(context).size.width * 0.75,
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'لم تقم باضافة أي منشور بعد',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                      fontFamily:
-                          AppTheme.lightTheme.textTheme.bodyMedium!.fontFamily,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Add error handling
           ),
         ),
       ],

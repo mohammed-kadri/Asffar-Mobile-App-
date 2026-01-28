@@ -75,7 +75,7 @@ class _LoginAgencyState extends State<LoginAgency> {
                                 color: Colors.grey,
                                 fontFamily: AppTheme.lightTheme.textTheme.bodyMedium?.fontFamily,
                               ),
-                              suffixIcon: Icon(Icons.email_outlined, color: AppTheme.lightTheme.colorScheme.primary),
+                              prefixIcon: Icon(Icons.email_outlined, color: AppTheme.lightTheme.colorScheme.primary),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.all(16),
                             ),
@@ -98,8 +98,8 @@ class _LoginAgencyState extends State<LoginAgency> {
                                 color: Colors.grey,
                                 fontFamily: AppTheme.lightTheme.textTheme.bodyMedium?.fontFamily,
                               ),
-                              suffixIcon: Icon(Icons.lock_outline, color: AppTheme.lightTheme.colorScheme.primary),
-                              prefixIcon: IconButton(
+                              prefixIcon: Icon(Icons.lock_outline, color: AppTheme.lightTheme.colorScheme.primary),
+                              suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off : Icons.visibility,
                                   color: Colors.grey,
